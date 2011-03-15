@@ -1,0 +1,17 @@
+name = Salg Andromeda
+description = Simple to col. design
+core = 6.x
+engine = phptemplate
+version = 0.1-dev
+
+stylesheets[all][] = css/style.css
+
+scripts[] = js/curvycorners.js
+scripts[] = js/utils.js
+
+regions[left] = Left sidebar
+regions[content] = Content
+regions[header] = Header
+regions[footer] = Footer
+
+php = DRUPAL_MINIMUM_PHP

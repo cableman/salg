@@ -1,0 +1,37 @@
+<?php
+// $Id: tcontact.install,v 1.1 2009/07/02 20:51:49 haffmans Exp $
+/**
+ * @file
+ * Installation file of the tContact module.
+ */
+
+/**
+ * Implementation of hook_install. Add language field to contact table and
+ * category index.
+ */
+function tcontact_install() {
+  $ret = array();
+  // Add 'language' field
+  db_add_field($ret, 'contact', 'language',
+    array('type' => 'varchar',
+          'length' => 12,
+          'default' => '',
+          'not null' => TRUE)
+  );
+  // Change 'category' key to include language
+  db_drop_unique_key($ret, 'contact', 'category');
+  db_add_unique_key($ret, 'contact', 'category', array('category', 'language'));
+}
+
+/**
+ * Implementation of hook_uninstall. Remove language field from contact table
+ * and category index.
+ */
+function tcontact_uninstall() {
+  // Reset unique category key
+  db_drop_unique_key($ret, 'contact', 'category');
+  db_add_unique_key($ret, 'contact', 'category', array('category'));
+
+  // Drop language field
+  db_drop_field($ret, 'contact', 'language');
+}

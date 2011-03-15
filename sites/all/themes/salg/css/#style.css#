@@ -1,0 +1,220 @@
+
+root { 
+  display: block;
+  background-color: #EEE;
+  background-image: url('/sites/all/themes/salg/images/bg.png');
+  background-repeat: repeat-x;
+  height: 100%;   
+}
+
+body {
+  font-size: 14px;
+  font-family: sans-serif;
+  padding-bottom: 40px;
+}
+
+#content-wrapper {
+  width: 900px;
+  margin: 0px auto;
+}
+
+/********************************
+ * Header settings
+ ********************************/
+#header {
+  border-bottom: 2px solid #CCC;
+  margin-bottom: 20px;
+  margin-top: 30px;
+  padding-bottom: 4px;
+}
+
+#header #logo {
+  font-size: 200%;
+}
+
+/********************************
+ * Menu settings
+ ********************************/
+#header #menu ul {
+  list-style: none;
+  margin-bottom: 4px;
+}
+
+#header #menu li {
+  position: relative;
+  display: inline;
+}
+
+#header #menu li.active a {
+  font-weight: bold;
+  font-size: 100%;
+}
+
+#header #menu li a {
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  font-size: 115%;
+  text-decoration: none;
+  color: #000;
+}
+
+#header #menu li a:hover {
+  text-decoration: underline;
+}
+
+/********************************
+ * Left sidebar settings
+ ********************************/
+#content #left-sidebar {
+  width: 250px;
+  font-size: 90%;
+  float: left;
+}
+
+#content #left-sidebar h2 {
+  font-size: 120%;
+  font-weight: bold;
+}
+
+/******************************
+ * Main page content
+ ******************************/
+#content {
+  margin-bottom: 4px;
+}
+
+#content #main-content {
+  width: 600px;
+  float: right;
+  margin-bottom: 20px;
+}
+
+#content #main-content .headline {
+  margin-bottom: 10px;
+}
+
+#content #main-content h1 {
+  font-size: 200%;
+  position: relative;
+  left: -15px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #AAA;
+  padding-left: 15px;
+  padding-right: 10px;
+  display: inline;
+}
+
+#content #main-content h1+p {
+  margin-top: 15px;
+}
+
+#content #main-content p {
+  margin-bottom: 15px;
+  line-height: 1.5em;
+}
+
+#content #main-content p:first-letter {
+  font-size: 150%;
+  font-variant: small-caps;
+  padding-right: 1px;
+}
+
+#content #main-content .non-letter:first-letter {
+  font-size: 100%;
+  font-variant: none;
+  padding-right: 0px;
+}
+
+
+#content #main-content img {
+  margin: 6px;
+}
+/******************************
+ * Footer content
+ ******************************/
+#footer {
+  border-top: 2px solid #CCC;
+  padding-top: 5px;
+  width: 100%;
+  clear: both;
+}
+
+#footer p {
+  float: right;
+  margin-right: 6px;
+}
+
+/*******************************
+ * Block settings
+ *******************************/
+#content #left-sidebar .block {
+  margin-bottom: 20px;
+}
+
+#content #left-sidebar .block-locale .content {
+  margin-top: 4px;
+}
+
+#content #left-sidebar .block-locale ul {
+  padding-left: 0px;
+}
+
+#content #left-sidebar .block-locale li {
+  margin-bottom: 2px;
+}
+
+#content #left-sidebar .block a {
+  text-decoration: none;
+  color: #444;
+}
+
+#content #left-sidebar .block a:hover {
+  text-decoration: underline;
+  color: #000;
+}
+
+#content #left-sidebar .block a.active {
+  font-weight: bold;
+  color: #000;
+}
+
+/*******************************
+ * Box settings
+ *******************************/
+#content .box {
+  margin: 0px auto;
+  text-align: left;
+  padding: 15px;
+  border: 1px solid #333;
+  background-color: #EEE;
+}
+
+#content .roundCorners {
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px;
+}
+
+.messages-box {
+  background-color: #FFF;
+  width: 600px;
+  float: right;
+  margin-bottom: 15px;
+}
+
+/*******************************
+ * Image gallery settings
+ *******************************/
+#content #main-content .lightbox-processed img {
+  border: 1px solid black;
+  padding: 4px;
+  background-color: #FFF;
+  opacity: .8;
+  filter: alpha(opacity=80);
+  -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+}
+
+#content #main-content .lightbox-processed img:hover {
+ opacity: 1;
+ filter: alpha(opacity=100);
+ -ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=100)";
+}

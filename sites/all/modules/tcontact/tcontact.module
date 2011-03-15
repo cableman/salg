@@ -1,0 +1,180 @@
+<?php
+// $Id: tcontact.module,v 1.2 2009/08/09 21:13:17 haffmans Exp $
+/**
+ * @file
+ * The tContact module. This allows translation of the Contact form's categories.
+ */
+
+/**
+ * Implementation of hook_schema_alter. Alter the contact form schema to
+ * add the language field, and add Language to the category "unique keys"
+ */
+function tcontact_schema_alter(&$schema) {
+  $schema['contact']['fields']['language'] = array(
+    'type' => 'varchar',
+    'length' => 12,
+    'default' => '',
+    'description' => 'Category language.',
+  );
+
+  $schema['unique keys']['category'][] = 'language';
+}
+
+/**
+ * Implementation of hook_menu_alter. Alter the contact form schema to show the
+ * modified tContact admin page instead.
+ */
+function tcontact_menu_alter(&$callbacks) {
+  $callbacks['admin/build/contact']['page callback'] = 'tcontact_admin_categories';
+  unset($callbacks['admin/build/contact']['file']);
+}
+
+
+/**
+ * Implementation of hook_form_alter. Alters the contact form so only those
+ * categories are displayed that are in the active language or language neutral.
+ * If no such categories are available, an error is displayed instead of the form
+ * (the original contact form's fields are unset).
+ */
+function tcontact_form_alter(&$form, $form_state, $form_id) {
+  global $language;
+
+  if ($form_id == "contact_admin_edit") {
+    // Alter admin form
+    _tcontact_admin_edit($form, $form_state, $form_id);
+  }
+
+  if ($form_id != "contact_mail_page") {
+    // Not the mail form
+    return;
+  }
+
+  if (isset($form['cid']) && ($form['cid']['#type'] == 'hidden')) {
+    // Specific category already specified in form
+    return;
+  }
+
+  $categories = array();
+  // Refetch categories, but now only for the right languages (active and neutral)
+  $result = db_query('SELECT cid, category, selected, language FROM {contact}
+                      WHERE language = "" OR language = "%s"
+                      ORDER BY weight, category', $language->language);
+  while ($category = db_fetch_object($result)) {
+    $categories[$category->cid] = $category->category;
+    // Prefer set language selected over language neutral selected
+    if ($category->selected && (!isset($default_category) || drupal_strlen($category->language) > 0)) {
+      $default_category = $category->cid;
+    }
+  }
+
+  if (count($categories) > 0) {
+    // Recreate category part of form
+    if (count($categories) > 1) {
+      // If there is more than one category available and no default category has been selected,
+      // prepend a default placeholder value.
+      if (!isset($default_category)) {
+        $default_category = t('- Please choose -');
+        $categories = array($default_category) + $categories;
+      }
+      $form['cid'] = array('#type' => 'select',
+        '#title' => t('Category'),
+        '#default_value' => $default_category,
+        '#options' => $categories,
+        '#required' => TRUE,
+      );
+    }
+    else {
+      // If there is only one category, store its cid.
+      $category_keys = array_keys($categories);
+      $form['cid'] = array('#type' => 'value',
+        '#value' => array_shift($category_keys),
+      );
+    }
+  }
+  else if (isset($form['#token'])) {
+    // Form was set, but no valid categories were found
+    drupal_set_message(t('No categories have been configured for this language. <a href="@add">Add one or more categories</a> to the form.', array('@add' => url('admin/build/contact/add'))), 'error');
+    foreach ($form as $key => $value) {
+      if ($key[0] != '#') {
+        unset($form[$key]);
+      }
+    }
+  }
+}
+
+/**
+ * Categories/list page. Adds "Language" column to the original.
+ */
+function tcontact_admin_categories() {
+  $languages = language_list();
+
+  // Refetch with language
+  $result = db_query('SELECT cid, category, recipients, selected, language FROM {contact} ORDER BY weight, category');
+  $rows = array();
+  while ($category = db_fetch_object($result)) {
+    $rows[] = array($category->category,
+      ($category->language) ? $languages[$category->language]->name : t('Neutral'),
+      $category->recipients,
+      ($category->selected ? t('Yes') : t('No')),
+      l(t('edit'), 'admin/build/contact/edit/'. $category->cid),
+      l(t('delete'), 'admin/build/contact/delete/'. $category->cid)
+    );
+  }
+  $header = array(t('Category'), t('Language'), t('Recipients'), t('Selected'), array('data' => t('Operations'), 'colspan' => 2));
+
+  return theme('table', $header, $rows);
+}
+
+/**
+ * Implementation of hook_form_alter().
+ * This is for the admin form. Modifies the category editing form to add a Language field.
+ */
+function _tcontact_admin_edit(&$form, $form_state, $form_id) {
+  if ($form['cid']['#value'] && !isset($form['language']['#value'])) {
+    $language = db_result(db_query('SELECT language FROM {contact} WHERE cid = "%d"', $form['cid']['#value']));
+  }
+  else if (isset($form['language']['#value'])) {
+    $language = $form['language']['#value'];
+  }
+
+  $form['language'] = array(
+      '#type' => 'select',
+      '#title' => t('Language'),
+      '#options' => array('' => t('Language neutral')) + locale_language_list('name'),
+      '#default_value' => (isset($language)) ? $language : '',
+      '#weight' => -1,
+  );
+  $form['category']['#weight'] = -2;
+
+  // Add pre/post submit handlers
+  $form['#submit'] = array_merge(array('tcontact_admin_edit_submit_pre'), $form['#submit']);
+  $form['#submit'][] = 'tcontact_admin_edit_submit_post';
+}
+
+/**
+ * Process the contact category edit page form submission. This is run before
+ * the original submit function, and stores the "selected" information as the
+ * Contact module will reset it if the current category is set as selected.
+ * This module provides support for one selection per language (instead of one
+ * in the whole system).
+ */
+function tcontact_admin_edit_submit_pre($form, &$form_state) {
+  // Find selected categories of other languages
+  $form_state['tcontact']['selected'] = array();
+  $result = db_query('SELECT cid FROM {contact} WHERE selected <> 0 AND language <> "%s"',
+    $form_state['values']['language']);
+  while ($row = db_fetch_array($result)) {
+      $form_state['tcontact']['selected'][] = $row['cid'];
+  }
+}
+
+/**
+ * Process the contact category edit page form submission. This resets the
+ * Selected values for all categories not in the submitted category's language.
+ */
+function tcontact_admin_edit_submit_post($form, &$form_state) {
+  // Reselect contact categories of other languages
+  foreach ($form_state['tcontact']['selected'] as $cid) {
+    db_query('UPDATE {contact} SET selected = 1 WHERE cid = %d', $cid);
+  }
+}
