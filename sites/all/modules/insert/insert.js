@@ -1,4 +1,6 @@
-// $Id: insert.js,v 1.4 2009/10/22 00:12:25 quicksketch Exp $
+// $Id: insert.js,v 1.6.2.4 2011/01/20 23:11:35 quicksketch Exp $
+
+(function ($) {
 
 /**
  * Behavior to add "Insert" buttons.
@@ -12,7 +14,7 @@ Drupal.behaviors.insert = function(context) {
   $('.node-form textarea:not([name$="[data][title]"])', context).focus(insertSetActive).blur(insertRemoveActive);
 
   // Add the click handler to the insert button.
-  $('.insert-button', context).click(insert);
+  $('.insert-button', context).unbind('click').click(insert);
 
   function insertSetActive() {
     insertTextarea = this;
@@ -61,38 +63,102 @@ Drupal.behaviors.insert = function(context) {
       }
     }
 
+    // Insert the text.
+    Drupal.insert.insertIntoActiveEditor(content);
+  }
+};
+
+// General Insert API functions.
+Drupal.insert = {
+  /**
+   * Insert content into the current (or last active) editor on the page. This
+   * should work with most WYSIWYGs as well as plain textareas.
+   *
+   * @param content
+   */
+  insertIntoActiveEditor: function(content) {
     // Always work in normal text areas that currently have focus.
     if (insertTextarea && insertTextarea.insertHasFocus) {
-      insertAtCursor(insertTextarea, content);
+      Drupal.insert.insertAtCursor(insertTextarea, content);
     }
     // Direct tinyMCE support.
     else if (typeof(tinyMCE) != 'undefined' && tinyMCE.activeEditor) {
+      Drupal.insert.activateTabPane(document.getElementById(tinyMCE.activeEditor.editorId));
       tinyMCE.activeEditor.execCommand('mceInsertContent', false, content);
     }
     // WYSIWYG support, should work in all editors if available.
     else if (Drupal.wysiwyg && Drupal.wysiwyg.activeId) {
+      Drupal.insert.activateTabPane(document.getElementById(Drupal.wysiwyg.activeId));
       Drupal.wysiwyg.instances[Drupal.wysiwyg.activeId].insert(content)
     }
     // FCKeditor module support.
-    else if (typeof(FCKeditorAPI) != 'undefined' && fckActiveId) {
+    else if (typeof(FCKeditorAPI) != 'undefined' && typeof(fckActiveId) != 'undefined') {
+      Drupal.insert.activateTabPane(document.getElementById(fckActiveId));
       FCKeditorAPI.Instances[fckActiveId].InsertHtml(content);
     }
     // Direct FCKeditor support (only body field supported).
-    else if (typeof(FCKeditorAPI) != 'undefined' && FCKeditorAPI.Instances['edit-body']) {
-      FCKeditorAPI.Instances['edit-body'].InsertHtml(content);
+    else if (typeof(FCKeditorAPI) != 'undefined') {
+      // Try inserting into the body.
+      if (FCKeditorAPI.Instances[insertTextarea.id]) {
+        Drupal.insert.activateTabPane(insertTextarea);
+        FCKeditorAPI.Instances[insertTextarea.id].InsertHtml(content);
+      }
+      // Try inserting into the first instance we find (may occur with very
+      // old versions of FCKeditor).
+      else {
+        for (var n in FCKeditorAPI.Instances) {
+          Drupal.insert.activateTabPane(document.getElementById(n));
+          FCKeditorAPI.Instances[n].InsertHtml(content);
+          break;
+        }
+      }
+    }
+    // CKeditor module support.
+    else if (typeof(CKEDITOR) != 'undefined' && typeof(Drupal.ckeditorActiveId) != 'undefined') {
+      Drupal.insert.activateTabPane(document.getElementById(Drupal.ckeditorActiveId));
+      CKEDITOR.instances[Drupal.ckeditorActiveId].insertHtml(content);
     }
     // Direct CKeditor support (only body field supported).
-    else if (typeof(CKEDITOR) != 'undefined' &&  CKEDITOR.instances['edit-body']) {
-      CKEDITOR.instances['edit-body'].insertHtml(content);
+    else if (typeof(CKEDITOR) != 'undefined' && CKEDITOR.instances[insertTextarea.id]) {
+      Drupal.insert.activateTabPane(insertTextarea);
+      CKEDITOR.instances[insertTextarea.id].insertHtml(content);
     }
     else if (insertTextarea) {
-      insertAtCursor(insertTextarea, content);
+      Drupal.insert.activateTabPane(insertTextarea);
+      Drupal.insert.insertAtCursor(insertTextarea, content);
     }
 
     return false;
-  }
+  },
 
-  function insertAtCursor(editor, content) {
+  /**
+   * Check for vertical tabs and activate the pane containing the editor.
+   *
+   * @param editor
+   *   The DOM object of the editor that will be checked.
+   */
+  activateTabPane: function(editor) {
+    var $pane = $(editor).parents('.vertical-tabs-pane:first');
+    var $panes = $pane.parent('.vertical-tabs-panes');
+    var $tabs = $panes.parents('.vertical-tabs:first').find('ul.vertical-tabs-list:first li a');
+    if ($pane.size() && $pane.is(':hidden') && $panes.size() && $tabs.size()) {
+      var index = $panes.children().index($pane);
+      $tabs.eq(index).click();
+    }
+  },
+
+  /**
+   * Insert content into a textarea at the current cursor position.
+   *
+   * @param editor
+   *   The DOM object of the textarea that will receive the text.
+   * @param content
+   *   The string to be inserted.
+   */
+  insertAtCursor: function(editor, content) {
+    // Record the current scroll position.
+    var scroll = editor.scrollTop;
+
     // IE support.
     if (document.selection) {
       editor.focus();
@@ -104,12 +170,17 @@ Drupal.behaviors.insert = function(context) {
     else if (editor.selectionStart || editor.selectionStart == '0') {
       var startPos = editor.selectionStart;
       var endPos = editor.selectionEnd;
-      editor.value = editor.value.substring(0, startPos)+ content + editor.value.substring(endPos, editor.value.length);
+      editor.value = editor.value.substring(0, startPos) + content + editor.value.substring(endPos, editor.value.length);
     }
 
     // Fallback, just add to the end of the content.
     else {
       editor.value += content;
     }
+
+    // Ensure the textarea does not unexpectedly scroll.
+    editor.scrollTop = scroll;
   }
-}
+};
+
+})(jQuery);

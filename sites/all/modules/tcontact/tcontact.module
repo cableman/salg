@@ -1,5 +1,5 @@
 <?php
-// $Id: tcontact.module,v 1.2 2009/08/09 21:13:17 haffmans Exp $
+// $Id: tcontact.module,v 1.2.2.1 2010/09/03 20:49:42 haffmans Exp $
 /**
  * @file
  * The tContact module. This allows translation of the Contact form's categories.
@@ -56,9 +56,9 @@ function tcontact_form_alter(&$form, $form_state, $form_id) {
 
   $categories = array();
   // Refetch categories, but now only for the right languages (active and neutral)
-  $result = db_query('SELECT cid, category, selected, language FROM {contact}
-                      WHERE language = "" OR language = "%s"
-                      ORDER BY weight, category', $language->language);
+  $result = db_query("SELECT cid, category, selected, language FROM {contact}
+                      WHERE language = '' OR language = '%s'
+                      ORDER BY weight, category", $language->language);
   while ($category = db_fetch_object($result)) {
     $categories[$category->cid] = $category->category;
     // Prefer set language selected over language neutral selected
@@ -109,7 +109,7 @@ function tcontact_admin_categories() {
   $languages = language_list();
 
   // Refetch with language
-  $result = db_query('SELECT cid, category, recipients, selected, language FROM {contact} ORDER BY weight, category');
+  $result = db_query("SELECT cid, category, recipients, selected, language FROM {contact} ORDER BY weight, category");
   $rows = array();
   while ($category = db_fetch_object($result)) {
     $rows[] = array($category->category,
@@ -131,7 +131,7 @@ function tcontact_admin_categories() {
  */
 function _tcontact_admin_edit(&$form, $form_state, $form_id) {
   if ($form['cid']['#value'] && !isset($form['language']['#value'])) {
-    $language = db_result(db_query('SELECT language FROM {contact} WHERE cid = "%d"', $form['cid']['#value']));
+    $language = db_result(db_query("SELECT language FROM {contact} WHERE cid = '%d'", $form['cid']['#value']));
   }
   else if (isset($form['language']['#value'])) {
     $language = $form['language']['#value'];
@@ -161,7 +161,7 @@ function _tcontact_admin_edit(&$form, $form_state, $form_id) {
 function tcontact_admin_edit_submit_pre($form, &$form_state) {
   // Find selected categories of other languages
   $form_state['tcontact']['selected'] = array();
-  $result = db_query('SELECT cid FROM {contact} WHERE selected <> 0 AND language <> "%s"',
+  $result = db_query("SELECT cid FROM {contact} WHERE selected <> 0 AND language <> '%s'",
     $form_state['values']['language']);
   while ($row = db_fetch_array($result)) {
       $form_state['tcontact']['selected'][] = $row['cid'];
@@ -175,6 +175,6 @@ function tcontact_admin_edit_submit_pre($form, &$form_state) {
 function tcontact_admin_edit_submit_post($form, &$form_state) {
   // Reselect contact categories of other languages
   foreach ($form_state['tcontact']['selected'] as $cid) {
-    db_query('UPDATE {contact} SET selected = 1 WHERE cid = %d', $cid);
+    db_query("UPDATE {contact} SET selected = 1 WHERE cid = %d", $cid);
   }
 }
